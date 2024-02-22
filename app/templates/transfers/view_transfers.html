@@ -3,7 +3,20 @@
 {% block content %}
 <div class="container mt-4">
     <h2>Transfers List</h2>
-    <a href="{{ url_for('transfer.add_transfer') }}" class="btn btn-primary mb-3">Add New Transfer</a>
+    <div class="row mb-3">
+        <div class="col">
+            <a href="{{ url_for('transfer.add_transfer') }}" class="btn btn-primary">Add New Transfer</a>
+        </div>
+        <div class="col">
+            <form action="" method="get" class="form-inline float-right">
+                <select name="filter" class="form-control" onchange="this.form.submit()">
+                    <option value="all">All Transfers</option>
+                    <option value="completed" {% if request.args.get('filter') == 'completed' %}selected{% endif %}>Completed</option>
+                    <option value="not_completed" {% if request.args.get('filter') == 'not_completed' %}selected{% endif %}>Not Completed</option>
+                </select>
+            </form>
+        </div>
+    </div>
     <table class="table">
         <thead>
             <tr>
@@ -20,7 +33,13 @@
                 <td>{{ transfer.from_location.name }}</td>
                 <td>{{ transfer.to_location.name }}</td>
                 <td>
+                    <a href="{{ url_for('transfer.view_transfer', transfer_id=transfer.id) }}" class="btn btn-primary" target="_blank">View</a>
                     <a href="{{ url_for('transfer.edit_transfer', transfer_id=transfer.id) }}" class="btn btn-secondary">Edit</a>
+                    {% if transfer.completed %}
+                        <a href="{{ url_for('transfer.uncomplete_transfer', transfer_id=transfer.id) }}" class="btn btn-success">Incomplete</a>
+                    {% elif not transfer.completed %}
+                        <a href="{{ url_for('transfer.complete_transfer', transfer_id=transfer.id) }}" class="btn btn-success">Complete</a>
+                    {% endif %}
                     <form action="{{ url_for('transfer.delete_transfer', transfer_id=transfer.id) }}" method="post" class="d-inline">
                         {{ form.hidden_tag() }}
                         <input type="submit" value="Delete" class="btn btn-danger" onclick="return confirm('Are you sure?');">

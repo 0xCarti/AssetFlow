@@ -105,11 +105,20 @@ def delete_item(item_id):
     return redirect(url_for('item.view_items'))
 
 
-@transfer.route('/transfers')
+@transfer.route('/transfers', methods=['GET'])
 @login_required
 def view_transfers():
-    transfers = Transfer.query.all()
+    filter_option = request.args.get('filter', 'all')
+
     form = TransferForm()
+
+    if filter_option == 'completed':
+        transfers = Transfer.query.filter_by(completed=True).all()
+    elif filter_option == 'not_completed':
+        transfers = Transfer.query.filter_by(completed=False).all()
+    else:
+        transfers = Transfer.query.all()
+
     return render_template('transfers/view_transfers.html', transfers=transfers, form=form)
 
 
@@ -196,7 +205,7 @@ def delete_transfer(transfer_id):
     return redirect(url_for('transfer.view_transfers'))
 
 
-@transfer.route('/transfers/complete/<int:transfer_id>', methods=['POST'])
+@transfer.route('/transfers/complete/<int:transfer_id>', methods=['GET'])
 @login_required
 def complete_transfer(transfer_id):
     transfer = Transfer.query.get_or_404(transfer_id)
@@ -204,6 +213,24 @@ def complete_transfer(transfer_id):
     db.session.commit()
     flash('Transfer marked as complete!', 'success')
     return redirect(url_for('transfer.view_transfers'))
+
+
+@transfer.route('/transfers/uncomplete/<int:transfer_id>', methods=['GET'])
+@login_required
+def uncomplete_transfer(transfer_id):
+    transfer = Transfer.query.get_or_404(transfer_id)
+    transfer.completed = False
+    db.session.commit()
+    flash('Transfer marked as not completed.', 'success')
+    return redirect(url_for('transfer.view_transfers'))
+
+
+@transfer.route('/transfers/view/<int:transfer_id>', methods=['GET'])
+@login_required
+def view_transfer(transfer_id):
+    transfer = Transfer.query.get_or_404(transfer_id)
+    transfer_items = TransferItem.query.filter_by(transfer_id=transfer.id).all()
+    return render_template('transfers/view_transfer.html', transfer=transfer, transfer_items=transfer_items)
 
 
 @item.route('/items/search', methods=['GET'])

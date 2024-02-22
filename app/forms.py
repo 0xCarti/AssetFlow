@@ -15,6 +15,12 @@ class LoginForm(FlaskForm):
     password = PasswordField('Password', validators=[DataRequired()])
 
 
+class SignupForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    password = PasswordField('Password', validators=[DataRequired()])
+    submit = SubmitField('Sign Up')
+
+
 class LocationForm(FlaskForm):
     name = StringField('Location Name', validators=[DataRequired(), Length(min=2, max=100)])
     submit = SubmitField('Submit')
@@ -48,3 +54,5 @@ class TransferForm(FlaskForm):
             item_form.item.choices = [(i.id, i.name) for i in Item.query.all()]
 
 
+class UserForm(FlaskForm):
+    pass

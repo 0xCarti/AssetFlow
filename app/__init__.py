@@ -25,13 +25,11 @@ def create_admin_user():
         # Create an admin user
         admin_email = "brycecotton@mail.com"  # Use your desired admin email
         admin_password = generate_password_hash("Snotsuh1")  # Use a secure password
-        admin_user = User(email=admin_email, password=admin_password, is_admin=True)
+        admin_user = User(email=admin_email, password=admin_password, is_admin=True, active=True)
 
         db.session.add(admin_user)
         db.session.commit()
         print("Admin user created.")
-    else:
-        print("Admin user already exists.")
 
 
 def create_app():
@@ -47,14 +45,15 @@ def create_app():
         from .models import models
         from .routes import auth_routes, routes
         from .routes.routes import main, location, item, transfer
-        from .routes.auth_routes import auth as auth_blueprint
+        from .routes.auth_routes import auth, admin
         from app.models.models import User
 
-        app.register_blueprint(auth_blueprint, url_prefix='/auth')
+        app.register_blueprint(auth, url_prefix='/auth')
         app.register_blueprint(main)
         app.register_blueprint(location)
         app.register_blueprint(item)
         app.register_blueprint(transfer)
+        app.register_blueprint(admin)
 
         db.create_all()
         create_admin_user()
