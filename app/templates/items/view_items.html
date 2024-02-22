@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Items List</h2>
+    <a href="{{ url_for('item.add_item') }}" class="btn btn-primary mb-3">Add New Item</a>
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Name</th>
+                <th scope="col">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <th scope="row">{{ loop.index }}</th>
+                <td>{{ item.name }}</td>
+                <td>
+                    <a href="{{ url_for('item.edit_item', item_id=item.id) }}" class="btn btn-secondary">Edit</a>
+                    <form action="{{ url_for('item.delete_item', item_id=item.id) }}" method="post" class="d-inline">
+                        <input type="submit" value="Delete" class="btn btn-danger" onclick="return confirm('Are you sure?');">
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
