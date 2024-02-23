@@ -62,10 +62,10 @@ def users():
     users = User.query.all()  # Fetch all users from the database
 
     if request.method == 'POST':
-        user_id = request.form.get('user_id')
+        user_id = request.args.get('user_id')
         action = request.form.get('action')
 
-        user = User.query.get(user_id)
+        user = User.query.filter_by(id=user_id).first()
         if user:
             if action == 'toggle_active':
                 user.active = not user.active
