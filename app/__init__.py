@@ -35,11 +35,17 @@ def create_admin_user():
         print("Admin user created.")
 
 
-def create_app():
+def create_app(args: list):
     app = Flask(__name__)
     app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY')
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///inventory.db'
     app.config['UPLOAD_FOLDER'] = 'uploads'
+    if '--demo' in args:
+        app.config['DEMO'] = True
+    else:
+        app.config['DEMO'] = False
+
+    print(app.config['DEMO'])
 
     db.init_app(app)
     login_manager.init_app(app)

@@ -28,7 +28,9 @@ def login():
         login_user(user)
         return redirect(url_for('main.home'))
 
-    return render_template('auth/login.html', form=form)
+    from run import app
+
+    return render_template('auth/login.html', form=form, demo=app.config['DEMO'])
 
 
 @auth.route('/logout')
