@@ -3,11 +3,17 @@
 {% block content %}
 <div class="container mt-4">
     <h2>Items List</h2>
-    <a href="{{ url_for('item.add_item') }}" class="btn btn-primary mb-3">Add New Item</a>
+    <div class="row justify-content-between">
+        <div class="col-auto">
+            <a href="{{ url_for('item.add_item') }}" class="btn btn-primary mb-3">Add New Item</a>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('item.import_items') }}" class="btn btn-info mb-3">Import Items</a>
+        </div>
+    </div>
     <table class="table">
         <thead>
             <tr>
-                <th scope="col">#</th>
                 <th scope="col">Name</th>
                 <th scope="col">Actions</th>
             </tr>
@@ -15,11 +21,11 @@
         <tbody>
             {% for item in items %}
             <tr>
-                <th scope="row">{{ loop.index }}</th>
                 <td>{{ item.name }}</td>
                 <td>
                     <a href="{{ url_for('item.edit_item', item_id=item.id) }}" class="btn btn-secondary">Edit</a>
                     <form action="{{ url_for('item.delete_item', item_id=item.id) }}" method="post" class="d-inline">
+                        {{ form.hidden_tag() }}
                         <input type="submit" value="Delete" class="btn btn-danger" onclick="return confirm('Are you sure?');">
                     </form>
                 </td>

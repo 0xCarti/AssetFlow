@@ -1,8 +1,13 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
+import os
+
+from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, session
 from flask_login import login_required, current_user
+from sqlalchemy import func
+from werkzeug.utils import secure_filename
+
 from app import db
-from app.forms import LocationForm, ItemForm, TransferForm
-from app.models.models import Location, Item, Transfer, TransferItem
+from app.forms import LocationForm, ItemForm, TransferForm, ImportItemsForm, DateRangeForm
+from app.models import Location, Item, Transfer, TransferItem
 
 # If you're not already using a Blueprint for your main routes, create one.
 main = Blueprint('main', __name__)
@@ -66,7 +71,8 @@ def delete_location(location_id):
 @login_required
 def view_items():
     items = Item.query.all()
-    return render_template('items/view_items.html', items=items)
+    form = ItemForm()
+    return render_template('items/view_items.html', items=items, form=form)
 
 
 @item.route('/items/add', methods=['GET', 'POST'])
@@ -92,7 +98,7 @@ def edit_item(item_id):
         db.session.commit()
         flash('Item updated successfully!')
         return redirect(url_for('item.view_items'))
-    return render_template('items/edit_item.html', form=form,  item=item)
+    return render_template('items/edit_item.html', form=form, item=item)
 
 
 @item.route('/items/delete/<int:item_id>', methods=['POST'])
@@ -190,9 +196,9 @@ def edit_transfer(transfer_id):
         flash('There was an error submitting the transfer.', 'error')
 
     # For GET requests or if the form doesn't validate, pass existing items to the template
-    items = [{"id": item.item_id, "name": item.item.name, "quantity": item.quantity} for item in transfer.transfer_items]
+    items = [{"id": item.item_id, "name": item.item.name, "quantity": item.quantity} for item in
+             transfer.transfer_items]
     return render_template('transfers/edit_transfer.html', form=form, transfer=transfer, items=items)
-
 
 
 @transfer.route('/transfers/delete/<int:transfer_id>', methods=['POST'])
@@ -240,3 +246,96 @@ def search_items():
     items = Item.query.filter(Item.name.ilike(f'%{search_term}%')).all()
     items_data = [{'id': item.id, 'name': item.name} for item in items]  # Create a list of dicts
     return jsonify(items_data)
+
+
+@item.route('/import_items', methods=['GET', 'POST'])
+@login_required
+def import_items():
+    form = ImportItemsForm()
+    if form.validate_on_submit():
+        from run import app
+
+        file = form.file.data
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+
+        # Parse the file
+        with open(filepath, 'r') as file:
+            for line in file:
+                item_name = line.strip()
+                if item_name:
+                    # Check if item already exists to avoid duplicates
+                    existing_item = Item.query.filter_by(name=item_name).first()
+                    if not existing_item:
+                        # Create a new item instance and add it to the database
+                        new_item = Item(name=item_name)
+                        db.session.add(new_item)
+            db.session.commit()
+
+        flash('Items imported successfully.', 'success')
+        return redirect(url_for('item.import_items'))
+
+    return render_template('items/import_items.html', form=form)
+
+
+@transfer.route('/transfers/generate_report', methods=['GET', 'POST'])
+def generate_report():
+    form = DateRangeForm()
+    if form.validate_on_submit():
+        start_datetime = form.start_datetime.data
+        end_datetime = form.end_datetime.data
+
+        # Alias for "from" and "to" locations
+        from_location = db.aliased(Location)
+        to_location = db.aliased(Location)
+
+        aggregated_transfers = db.session.query(
+            from_location.name.label('from_location_name'),
+            to_location.name.label('to_location_name'),
+            Item.name.label('item_name'),
+            func.sum(TransferItem.quantity).label('total_quantity')
+        ).select_from(Transfer) \
+          .join(TransferItem, Transfer.id == TransferItem.transfer_id) \
+          .join(Item, TransferItem.item_id == Item.id) \
+          .join(from_location, Transfer.from_location_id == from_location.id) \
+          .join(to_location, Transfer.to_location_id == to_location.id) \
+          .filter(
+              Transfer.completed == True,
+              Transfer.date_created >= start_datetime,
+              Transfer.date_created <= end_datetime
+          ) \
+          .group_by(
+              from_location.name,
+              to_location.name,
+              Item.name
+          ) \
+          .order_by(
+              from_location.name,
+              to_location.name,
+              Item.name
+          ) \
+          .all()
+
+        # Process the results for display or session storage
+        session['aggregated_transfers'] = [{
+            'from_location_name': result[0],
+            'to_location_name': result[1],
+            'item_name': result[2],
+            'total_quantity': result[3]
+        } for result in aggregated_transfers]
+
+        # Store start and end date/time in session for use in the report
+        session['report_start_datetime'] = start_datetime.strftime('%Y-%m-%d %H:%M')
+        session['report_end_datetime'] = end_datetime.strftime('%Y-%m-%d %H:%M')
+
+        flash('Transfer report generated successfully.', 'success')
+        return redirect(url_for('transfer.view_report'))
+
+    return render_template('transfers/generate_report.html', form=form)
+
+
+@transfer.route('/transfers/report')
+def view_report():
+    aggregated_transfers = session.get('aggregated_transfers', [])
+    return render_template('transfers/view_report.html', aggregated_transfers=aggregated_transfers)

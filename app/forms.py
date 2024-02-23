@@ -1,13 +1,15 @@
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileRequired
 from wtforms import StringField, SubmitField
 from wtforms.fields.choices import SelectField
+from wtforms.fields.datetime import DateTimeLocalField
 from wtforms.fields.form import FormField
 from wtforms.fields.list import FieldList
 from wtforms.fields.numeric import IntegerField
-from wtforms.fields.simple import PasswordField
+from wtforms.fields.simple import PasswordField, FileField
 from wtforms.validators import DataRequired, Length, Email
 
-from app.models.models import Location, Item
+from app.models import Location, Item
 
 
 class LoginForm(FlaskForm):
@@ -56,3 +58,13 @@ class TransferForm(FlaskForm):
 
 class UserForm(FlaskForm):
     pass
+
+
+class ImportItemsForm(FlaskForm):
+    file = FileField('Item File', validators=[FileRequired()])
+    submit = SubmitField('Import')
+
+
+class DateRangeForm(FlaskForm):
+    start_datetime = DateTimeLocalField('Start Date/Time', format='%Y-%m-%d %H:%M', validators=[DataRequired()], id='start_datetime')
+    end_datetime = DateTimeLocalField('End Date/Time', format='%Y-%m-%d %H:%M', validators=[DataRequired()], id='end_datetime')
