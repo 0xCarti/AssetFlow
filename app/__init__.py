@@ -39,7 +39,7 @@ def create_app():
     app = Flask(__name__)
     app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY')
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///inventory.db'
-    app.config['UPLOAD_FOLDER'] = 'app/static/uploads'
+    app.config['UPLOAD_FOLDER'] = 'uploads'
 
     db.init_app(app)
     login_manager.init_app(app)
