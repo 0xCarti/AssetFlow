@@ -26,7 +26,7 @@
         <h3>Add Items</h3>
         <div class="form-group">
             <label for="item-name" class="form-label">Item Name</label>
-            <input type="text" id="item-name" class="form-control" name="item-name">
+            <input type="text" id="item-name" class="form-control" name="item-name" autocomplete="off">
             <div id="suggestions"></div>
         </div>
         <div id="item-list" class="mb-3">
@@ -82,10 +82,10 @@ function addItemToList(item, index) {
     var listItem = document.createElement('div');
     listItem.classList.add('item-container', 'd-flex', 'justify-content-between', 'align-items-center', 'mb-2');
     listItem.innerHTML = `
-        <div>${item.name}</div>
+        <div style="padding-left: 15px; font-weight: bold;">${item.name}</div>
         <div class="d-flex align-items-center">
             <input type="hidden" name="items-${index}-item" value="${item.id}">
-            <input type="number" class="form-control quantity" name="items-${index}-quantity" value="${item.quantity}" placeholder="Qty" style="max-width: 100px;">
+            <input type="number" class="form-control quantity" name="items-${index}-quantity" value="${item.quantity}" placeholder="Qty" style="max-width: 120px;">
             <button type="button" class="btn btn-danger delete-item ml-2">Delete</button>
         </div>
     `;

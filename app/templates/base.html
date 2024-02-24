@@ -19,6 +19,18 @@
                 max-width: 50% !important;
             }
         }
+
+        .suggestion {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            font-size: 17px;
+            font-weight: bold;
+        }
+
+        .suggestion:hover {
+            background-color: #f8f8f8;
+        }
     </style>
 </head>
 <body>
@@ -51,11 +63,11 @@
                 <a class="nav-link" href="{{ url_for('auth.signup') }}">Register</a>
             </li>
             {% else %}
-                {% if current_user.is_admin %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('admin.users') }}">Control Panel</a>
-                </li>
-                {% endif %}
+            {% if current_user.is_admin %}
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('admin.users') }}">Control Panel</a>
+            </li>
+            {% endif %}
             <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
             </li>

@@ -40,15 +40,19 @@ def add_location():
 @login_required
 def edit_location(location_id):
     location = Location.query.get_or_404(location_id)
-    form = LocationForm()
+    form = LocationForm(obj=location)
+
     if form.validate_on_submit():
-        location.name = form.name.data
+        form.populate_obj(location)
         db.session.commit()
-        flash('Location updated successfully!')
-        return redirect(url_for('locations.view_locations'))
-    elif request.method == 'GET':
-        form.name.data = location.name
-    return render_template('locations/edit_location.html', form=form, location=location)
+        flash('Location updated successfully.', 'success')
+        return redirect(url_for('location.edit_location', location_id=location.id))
+
+    # Query for completed transfers to this location
+    transfers_to_location = Transfer.query.filter_by(to_location_id=location_id, completed=True).all()
+
+    return render_template('locations/edit_location.html', form=form, location=location,
+                           transfers=transfers_to_location)
 
 
 @location.route('/locations')
@@ -129,16 +133,30 @@ def bulk_delete_items():
 @login_required
 def view_transfers():
     filter_option = request.args.get('filter', 'not_completed')
+    transfer_id = request.args.get('transfer_id', '', type=int)  # Optional: Search by Transfer ID
+    from_location_name = request.args.get('from_location', '')  # Optional: Search by From Location
+    to_location_name = request.args.get('to_location', '')  # Optional: Search by To Location
 
-    form = TransferForm()
+    query = Transfer.query
+    if transfer_id is not '':
+        query = query.filter(Transfer.id == transfer_id)
+
+    if from_location_name is not '':
+        query = query.join(Location, Transfer.from_location_id == Location.id).filter(
+            Location.name.ilike(f"%{from_location_name}%"))
+
+    if to_location_name is not '':
+        query = query.join(Location, Transfer.to_location_id == Location.id).filter(
+            Location.name.ilike(f"%{to_location_name}%"))
 
     if filter_option == 'completed':
-        transfers = Transfer.query.filter_by(completed=True).all()
+        transfers = query.filter(Transfer.completed == True).all()
     elif filter_option == 'not_completed':
-        transfers = Transfer.query.filter_by(completed=False).all()
+        transfers = query.filter(Transfer.completed == False).all()
     else:
-        transfers = Transfer.query.all()
+        transfers = query.all()
 
+    form = TransferForm()  # Assuming you're using it for something like a filter form on the page
     return render_template('transfers/view_transfers.html', transfers=transfers, form=form)
 
 
@@ -174,6 +192,8 @@ def add_transfer():
 
         flash('Transfer added successfully!', 'success')
         return redirect(url_for('transfer.view_transfers'))
+    elif form.errors:
+        flash('There was an error submitting the transfer.', 'error')
 
     return render_template('transfers/add_transfer.html', form=form)
 
