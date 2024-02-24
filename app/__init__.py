@@ -38,7 +38,6 @@ def create_admin_user():
 
 
 def create_app(args: list):
-    global socketio
     app = Flask(__name__)
     app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY')
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///inventory.db'
@@ -51,7 +50,6 @@ def create_app(args: list):
     db.init_app(app)
     login_manager.init_app(app)
     Bootstrap(app)
-    socketio = SocketIO(app)
 
     with app.app_context():
         from app.routes import auth_routes
