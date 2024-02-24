@@ -1,11 +1,12 @@
 import os
 
+import socketio
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, session
 from flask_login import login_required, current_user
 from sqlalchemy import func
 from werkzeug.utils import secure_filename
 
-from app import db
+from app import db, socketio
 from app.forms import LocationForm, ItemForm, TransferForm, ImportItemsForm, DateRangeForm
 from app.models import Location, Item, Transfer, TransferItem
 
@@ -111,10 +112,23 @@ def delete_item(item_id):
     return redirect(url_for('item.view_items'))
 
 
+@item.route('/items/bulk_delete', methods=['POST'])
+@login_required
+def bulk_delete_items():
+    item_ids = request.form.getlist('item_ids')
+    if item_ids:
+        Item.query.filter(Item.id.in_(item_ids)).delete(synchronize_session='fetch')
+        db.session.commit()
+        flash('Selected items have been deleted.', 'success')
+    else:
+        flash('No items selected.', 'warning')
+    return redirect(url_for('item.view_items'))
+
+
 @transfer.route('/transfers', methods=['GET'])
 @login_required
 def view_transfers():
-    filter_option = request.args.get('filter', 'all')
+    filter_option = request.args.get('filter', 'not_completed')
 
     form = TransferForm()
 
@@ -155,6 +169,8 @@ def add_transfer():
                     )
                     db.session.add(transfer_item)
         db.session.commit()
+
+        socketio.emit('new_transfer', {'message': 'New transfer added'})
 
         flash('Transfer added successfully!', 'success')
         return redirect(url_for('transfer.view_transfers'))
@@ -296,26 +312,26 @@ def generate_report():
             Item.name.label('item_name'),
             func.sum(TransferItem.quantity).label('total_quantity')
         ).select_from(Transfer) \
-          .join(TransferItem, Transfer.id == TransferItem.transfer_id) \
-          .join(Item, TransferItem.item_id == Item.id) \
-          .join(from_location, Transfer.from_location_id == from_location.id) \
-          .join(to_location, Transfer.to_location_id == to_location.id) \
-          .filter(
-              Transfer.completed == True,
-              Transfer.date_created >= start_datetime,
-              Transfer.date_created <= end_datetime
-          ) \
-          .group_by(
-              from_location.name,
-              to_location.name,
-              Item.name
-          ) \
-          .order_by(
-              from_location.name,
-              to_location.name,
-              Item.name
-          ) \
-          .all()
+            .join(TransferItem, Transfer.id == TransferItem.transfer_id) \
+            .join(Item, TransferItem.item_id == Item.id) \
+            .join(from_location, Transfer.from_location_id == from_location.id) \
+            .join(to_location, Transfer.to_location_id == to_location.id) \
+            .filter(
+            Transfer.completed == True,
+            Transfer.date_created >= start_datetime,
+            Transfer.date_created <= end_datetime
+        ) \
+            .group_by(
+            from_location.name,
+            to_location.name,
+            Item.name
+        ) \
+            .order_by(
+            from_location.name,
+            to_location.name,
+            Item.name
+        ) \
+            .all()
 
         # Process the results for display or session storage
         session['aggregated_transfers'] = [{

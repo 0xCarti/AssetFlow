@@ -9,29 +9,39 @@
         </div>
         <div class="col-auto">
             <a href="{{ url_for('item.import_items') }}" class="btn btn-info mb-3">Import Items</a>
+            <button type="submit" form="bulk-delete-form" class="btn btn-warning mb-3" onclick="return confirm('Are you sure?');">Delete Items</button>
         </div>
     </div>
-    <table class="table">
-        <thead>
-            <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in items %}
-            <tr>
-                <td>{{ item.name }}</td>
-                <td>
-                    <a href="{{ url_for('item.edit_item', item_id=item.id) }}" class="btn btn-secondary">Edit</a>
-                    <form action="{{ url_for('item.delete_item', item_id=item.id) }}" method="post" class="d-inline">
-                        {{ form.hidden_tag() }}
-                        <input type="submit" value="Delete" class="btn btn-danger" onclick="return confirm('Are you sure?');">
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <form id="bulk-delete-form" action="{{ url_for('item.bulk_delete_items') }}" method="post">
+        {{ form.hidden_tag() }}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th scope="col"><input type="checkbox" id="select-all"></th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td><input type="checkbox" name="item_ids" value="{{ item.id }}"></td>
+                    <td>{{ item.name }}</td>
+                    <td>
+                        <a href="{{ url_for('item.edit_item', item_id=item.id) }}" class="btn btn-secondary">Edit</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </form>
 </div>
+<script>
+document.getElementById('select-all').onclick = function() {
+    var checkboxes = document.querySelectorAll('input[type="checkbox"][name="item_ids"]');
+    for (var checkbox of checkboxes) {
+        checkbox.checked = this.checked;
+    }
+}
+</script>
 {% endblock %}

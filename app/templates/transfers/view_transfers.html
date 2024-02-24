@@ -6,13 +6,17 @@
     <div class="row mb-3">
         <div class="col">
             <a href="{{ url_for('transfer.add_transfer') }}" class="btn btn-primary">Add New Transfer</a>
+
+            <button id="new-transfer-alert" class="btn btn-warning" onclick="window.location.reload();" style="display: none;">
+                <img src="{{ url_for('static', filename='img/alert_icon.png') }}" alt="Reload" style="width: 20px; height: 20px;"/>
+            </button>
         </div>
         <div class="col">
             <form action="" method="get" class="form-inline float-right">
                 <select name="filter" class="form-control" onchange="this.form.submit()">
-                    <option value="all">All Transfers</option>
+                    <option value="not_completed">Not Completed</option>
                     <option value="completed" {% if request.args.get('filter') == 'completed' %}selected{% endif %}>Completed</option>
-                    <option value="not_completed" {% if request.args.get('filter') == 'not_completed' %}selected{% endif %}>Not Completed</option>
+                    <option value="all" {% if request.args.get('filter') == 'all' %}selected{% endif %}>All Transfers</option>
                 </select>
             </form>
         </div>
@@ -20,35 +24,51 @@
     </div>
     <table class="table">
         <thead>
-            <tr>
-                <th scope="col">#</th>
-                <th scope="col">From Location</th>
-                <th scope="col">To Location</th>
-                <th scope="col">Actions</th>
-            </tr>
+        <tr>
+            <th scope="col">#</th>
+            <th scope="col">From Location</th>
+            <th scope="col">To Location</th>
+            <th scope="col">Actions</th>
+        </tr>
         </thead>
         <tbody>
-            {% for transfer in transfers %}
-            <tr>
-                <th scope="row">{{ loop.index }}</th>
-                <td>{{ transfer.from_location.name }}</td>
-                <td>{{ transfer.to_location.name }}</td>
-                <td>
-                    <a href="{{ url_for('transfer.view_transfer', transfer_id=transfer.id) }}" class="btn btn-primary" target="_blank">View</a>
-                    <a href="{{ url_for('transfer.edit_transfer', transfer_id=transfer.id) }}" class="btn btn-secondary">Edit</a>
-                    {% if transfer.completed %}
-                        <a href="{{ url_for('transfer.uncomplete_transfer', transfer_id=transfer.id) }}" class="btn btn-success">Incomplete</a>
-                    {% elif not transfer.completed %}
-                        <a href="{{ url_for('transfer.complete_transfer', transfer_id=transfer.id) }}" class="btn btn-success">Complete</a>
-                    {% endif %}
-                    <form action="{{ url_for('transfer.delete_transfer', transfer_id=transfer.id) }}" method="post" class="d-inline">
-                        {{ form.hidden_tag() }}
-                        <input type="submit" value="Delete" class="btn btn-danger" onclick="return confirm('Are you sure?');">
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
+        {% for transfer in transfers %}
+        <tr>
+            <th scope="row">{{ loop.index }}</th>
+            <td>{{ transfer.from_location.name }}</td>
+            <td>{{ transfer.to_location.name }}</td>
+            <td>
+                <a href="{{ url_for('transfer.view_transfer', transfer_id=transfer.id) }}" class="btn btn-primary"
+                   target="_blank">View</a>
+                <a href="{{ url_for('transfer.edit_transfer', transfer_id=transfer.id) }}" class="btn btn-secondary">Edit</a>
+                {% if transfer.completed %}
+                <a href="{{ url_for('transfer.uncomplete_transfer', transfer_id=transfer.id) }}"
+                   class="btn btn-success">Incomplete</a>
+                {% elif not transfer.completed %}
+                <a href="{{ url_for('transfer.complete_transfer', transfer_id=transfer.id) }}" class="btn btn-success">Complete</a>
+                {% endif %}
+                <form action="{{ url_for('transfer.delete_transfer', transfer_id=transfer.id) }}" method="post"
+                      class="d-inline">
+                    {{ form.hidden_tag() }}
+                    <input type="submit" value="Delete" class="btn btn-danger"
+                           onclick="return confirm('Are you sure?');">
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
         </tbody>
     </table>
 </div>
+<script>
+    var socket = io.connect('http://' + document.domain + ':' + location.port);
+
+    socket.on('connect', function() {
+        console.log('Websocket connected!');
+    });
+
+    socket.on('new_transfer', function(data) {
+        //alert(data.message);
+        document.getElementById('new-transfer-alert').style.display = 'inline-block';
+    });
+</script>
 {% endblock %}

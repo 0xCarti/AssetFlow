@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 from flask import Flask
+from flask_socketio import SocketIO
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_bootstrap import Bootstrap
@@ -11,6 +12,7 @@ load_dotenv()
 db = SQLAlchemy()
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
+socketio = None
 
 
 @login_manager.user_loader
@@ -36,6 +38,7 @@ def create_admin_user():
 
 
 def create_app(args: list):
+    global socketio
     app = Flask(__name__)
     app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY')
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///inventory.db'
@@ -45,11 +48,10 @@ def create_app(args: list):
     else:
         app.config['DEMO'] = False
 
-    print(app.config['DEMO'])
-
     db.init_app(app)
     login_manager.init_app(app)
     Bootstrap(app)
+    socketio = SocketIO(app)
 
     with app.app_context():
         from app.routes import auth_routes
